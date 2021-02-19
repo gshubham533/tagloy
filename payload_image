@@ -1,0 +1,1 @@
+'{"to": "' + str(x) + '","recipient_type": "individual","type":"template","template": {"namespace": "10aac1cc_58ce_4275_8374_9b0ffd4b9de1","element_name": "study_welcome","language": {"code": "en","policy": "deterministic"},"components":[{"type": "image","image": {"link": "https://upload.wikimedia.org/wikipedia/en/9/95/Test_image.jpg",}]}}';
