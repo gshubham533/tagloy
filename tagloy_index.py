@@ -7,19 +7,36 @@ import json
 import csv
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
+status1 = {
+    "ScreenFrontgate": "online",
+    "ScreeDiningarea": "offline",
+    "ScreenParking": "online",
+}
 #payloads to send for each function of restaurant flow
-publ = "Welcome to the Publisher Submenu"
-high = "Welcome to the Highlights Submenu"
-lbs = "Welcome to the Live Box Status"
-Trbsht = "Welcome to the Trouble shoot menu"
-cta = "Welcome to the Extra"
+newline = "\\n"
+default = f"Dear Owner/Manager/Staff{newline}Welcome to Tagloy. Please select an option:  {newline}1. Publisher {newline}2. Highlights {newline}3. Live Box Status {newline}4. Troubleshoot {newline}5. Connect to Agent"
+res_req = f"Please select the venues of the restaurant to be selected{newline}{newline}1. Viman Nagar{newline}2. Koregaon Par{newline}3. Kalyani Nagar{newline}4. *All locations*"
+publ = f"Dear *Owner/Manager/Staff* {newline}{newline}Kindly send the *video/image* that you wish to display on screen"
+high = f"Dear *Owner/Manager/Staff*{newline}{newline}Kindly send the Highlights video/image that you wish to display on the tagloy screen"
+lbs = f"Welcome to Live box status{newline}{newline}Screen Front gate:online{newline}Screen Dining area: offline{newline}ScreenParking: online"
+Trbsht = f"Welcome to Trouble shoot menu{newline}{newline}Please select your query{newline}1. My live box is not working properly.{newline}2. Unable to upload picture/video{newline}3. My content is not displayed{newline}4. Another problem{newline}5. End"
+cta = f"Please stay online{newline}We are connecting you to our agent"
 
 url1 = "https://100.24.50.36:9090"
 url_template = url1 + "/v1/messages/"
 url_register = url1 + "/v1/contacts/"
 
+
 app = Flask(__name__)
+
+def publisher(phone, text):
+    body = 'publisher'
+    send_message(phone, body)
+    int_text = text
+
+def pub1(phone):
+    body = 'sub'
+
 
 
 def update_authkey():  # upadting authkey repetatively
@@ -42,7 +59,7 @@ def send_template(phone):
     x = phone
     authkey = update_authkey()
     payload = '{"blocking": "wait","contacts": ["+' + str(x) + '"] }'
-
+    print(x)
     headers = {
         'Content-Type': "application/json",
         'Authorization': "Bearer " + authkey,
@@ -51,11 +68,14 @@ def send_template(phone):
     }
     response = requests.request("POST", url_register, data=payload, headers=headers, verify=False)
     rs = response.text
+    print(rs)
     json_data = json.loads(rs)
     status = json_data["contacts"][0]["status"]
     if status == "valid":
         print("valid")
-        payload1 = '{"to": "' + str(x) + '","recipient_type": "individual","type":"text", {"text": "Whattup?"}}'
+        body = f"Dear Owner/Manager/Staff{newline}Welcome to Tagloy. Please select an option:  {newline}1. Publisher {newline}2. Highlights {newline}3. Live Box Status {newline}4. Troubleshoot {newline}5. Connect to Agent"
+        payl = body
+        payload1 = "{\n  \"to\": \"" + str(x) + "\",\n  \"type\": \"text\",\n  \"recipient_type\": \"individual\",\n  \"text\": {\n    \"body\": \" " + payl + " \"\n  }\n}\n"
         headers = {
             'Content-Type': "application/json",
             'Authorization': "Bearer " + authkey,
@@ -68,20 +88,26 @@ def send_template(phone):
         print(response1.text)
 
 
-def send_message(rcvr, body, type1):
+def send_message(rcvr, body):
     authkey = update_authkey()
     url2 = url1 + "/v1/messages"
     # print(type1)
-    if body == "a1":
+    if body == "publisher":
         body = publ
-    elif body == "a2":
+    elif body == "highlights":
         body = high
-    elif body == "a3":
+    elif body == "lbs":
         body = lbs
-    elif body == "a4":
+    elif body == "troubleshoot":
         body = Trbsht
-    elif body == "a5":
+    elif body == "cta":
         body = cta
+    elif body == "image":
+        body = "*Image Received*\\n\\n" + res_req
+    elif body == "default":
+        body = default
+    else:
+        body = "Default"
 
     to = rcvr
     payload = "{\n  \"to\": \"" + to + "\",\n  \"type\": \"text\",\n  \"recipient_type\": \"individual\",\n  \"text\": {\n    \"body\": \" " + body + " \"\n  }\n}\n"
@@ -101,7 +127,7 @@ def send_message(rcvr, body, type1):
 
 @app.route('/', methods=['POST', 'GET'])
 def Get_Message():
-    thelist = ["hi", "hello", "hey", "3"]
+    thelist = ["hi", "hello", "hey"]
     now = str(datetime.now().date())
     now_time = str(datetime.now())
 
@@ -109,32 +135,30 @@ def Get_Message():
     try:
         frm = str(response["messages"][0]["from"])
         type1 = str(response["messages"][0]["type"])
+        print(type1)
         if type1 == "text":
             text = str(response["messages"][0]["text"]["body"])
-            if text.lower() == '1':
-                send_message(frm, "a1", type1)
+            if text.lower() == ('1' or 'publisher') :
+                send_message(frm, 'publisher')
             elif text.lower() == '2':
-                send_message(frm, "a2", type1)
+                send_message(frm,"highlights")
             elif text.lower() == "3":
-                send_message(frm, "a3",type1)
+                send_message(frm, "lbs")
             elif text.lower() == '4':
-                send_message(frm, "a4", type1)
+                send_message(frm, "troubleshoot")
             elif text.lower() == '5':
-                send_message(frm, "a5", type1)
+                send_message(frm, "cta")
             elif text.lower() in thelist:
-                send_template(frm)
+                send_message(frm, "default")
+            else:
+                send_message(frm, "menu")
 
-        else:
-            send_message(frm, "menu", type1)
+        if type1 == "image":
+            send_message(frm,"image")
     except Exception as e:
         print(e)
 
     return ''
-
-
-
-
-
 
 
 if __name__ == '__main__':
